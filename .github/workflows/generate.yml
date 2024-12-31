@@ -1,10 +1,10 @@
-name: PHP Composer
+name: Calendar generate
 
 on:
   push:
     branches: [ "master" ]
   schedule:
-    - cron:  '15 2 1 * *'
+    - cron:  '15 0 1 * *'
   workflow_dispatch:
 
 concurrency:
@@ -42,6 +42,7 @@ jobs:
           echo "dist directory made."
           php ./main.php
           echo "PHP run."
+          cp ./README.md ./dist/README.md
 
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
