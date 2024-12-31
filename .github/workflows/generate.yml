@@ -43,6 +43,7 @@ jobs:
           php ./main.php
           echo "PHP run."
           cp ./README.md ./dist/README.md
+          echo "README.md copied."
 
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
