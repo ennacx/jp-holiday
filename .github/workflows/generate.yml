@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "master" ]
   schedule:
-    - cron:  '0 0 1 * *'
+    - cron:  '15 2 1 * *'
   workflow_dispatch:
 
 concurrency:
@@ -40,10 +40,8 @@ jobs:
       run: |
           mkdir -p ./dist
           echo "dist directory made."
-          ls -a
           php ./main.php
           echo "PHP run."
-          ls -a ./dist/v1
 
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
