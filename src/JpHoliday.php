@@ -196,37 +196,37 @@ class JpHoliday {
             $tsSai3Years   = $func($this->filter3Years($this->saijitsu), 'timestamp', SORT_NUMERIC);
             $this->putJson('/sai/date.json', $dateSai3Years);
             $this->putJson('/sai/ts.json', $tsSai3Years);
-	        $this->putCsv('/sai/date.csv', $dateSai3Years);
-	        $this->putCsv('/sai/ts.csv', $tsSai3Years);
+            $this->putCsv('/sai/date.csv', $dateSai3Years);
+            $this->putCsv('/sai/ts.csv', $tsSai3Years);
 
             // 祝祭日
             $temp = array_merge($dateShu3Years, $dateSai3Years);
             ksort($temp, SORT_NATURAL);
             $this->putJson('/date.json', $temp);
-	        $this->putCsv('/date.csv', $temp);
+            $this->putCsv('/date.csv', $temp);
             $temp = $tsSai3Years + $tsShu3Years;
             ksort($temp, SORT_NUMERIC);
             $this->putJson('/ts.json', $temp);
-	        $this->putCsv('/ts.csv', $temp);
+            $this->putCsv('/ts.csv', $temp);
             unset($temp);
         }
 
         // 年ごとに
         {
-			$saveFunc = function(int $year, array $arr, ?string $s = null) use(&$func, &$toJson){
+            $saveFunc = function(int $year, array $arr, ?string $s = null) use(&$func, &$toJson){
 
-				$temp1 = $func($arr, 'date', SORT_NATURAL);
-				$temp2 = $func($arr, 'timestamp', SORT_NATURAL);
+                $temp1 = $func($arr, 'date', SORT_NATURAL);
+                $temp2 = $func($arr, 'timestamp', SORT_NATURAL);
 
-				$path = "/{$year}";
-				if($s !== null)
-					$path .= "/{$s}";
+                $path = "/{$year}";
+                if($s !== null)
+                    $path .= "/{$s}";
 
-				$this->putJson("{$path}/date.json", $temp1);
-				$this->putCsv("{$path}/date.csv", $temp1);
-				$this->putJson("{$path}/ts.json", $temp2);
-				$this->putCsv("{$path}/ts.csv", $temp2);
-			};
+                $this->putJson("{$path}/date.json", $temp1);
+                $this->putCsv("{$path}/date.csv", $temp1);
+                $this->putJson("{$path}/ts.json", $temp2);
+                $this->putCsv("{$path}/ts.csv", $temp2);
+            };
 
             $years = array_unique(array_merge(
                 array_keys($this->shukujitsu),
@@ -240,16 +240,16 @@ class JpHoliday {
                 $merge = array_merge($shuArr, $saiArr);
 
                 if(!empty($merge))
-	                $saveFunc($year, $merge);
-				unset($merge);
+                    $saveFunc($year, $merge);
+                unset($merge);
 
                 if(!empty($shuArr))
-	                $saveFunc($year, $shuArr, 'shu');
-				unset($shuArr);
+                    $saveFunc($year, $shuArr, 'shu');
+                unset($shuArr);
 
                 if(!empty($saiArr))
-	                $saveFunc($year, $saiArr, 'sai');
-				unset($saiArr);
+                    $saveFunc($year, $saiArr, 'sai');
+                unset($saiArr);
             }
         }
     }
@@ -272,14 +272,14 @@ class JpHoliday {
      * @param  array  $arr
      * @return void
      */
-	private function putJson(string $path, array $arr): void {
+    private function putJson(string $path, array $arr): void {
 
-		$fullPath = $this->saveBasePath.$path;
+        $fullPath = $this->saveBasePath.$path;
 
-		Functions::makeDirectory(dirname($fullPath));
+        Functions::makeDirectory(dirname($fullPath));
 
-		file_put_contents($fullPath, json_encode($arr, JSON_UNESCAPED_UNICODE) ?: '{}');
-	}
+        file_put_contents($fullPath, json_encode($arr, JSON_UNESCAPED_UNICODE) ?: '{}');
+    }
 
     /**
      * CSV化
@@ -288,20 +288,20 @@ class JpHoliday {
      * @param  array  $arr
      * @return void
      */
-	private function putCsv(string $path, array $arr): void {
+    private function putCsv(string $path, array $arr): void {
 
-		$fullPath = $this->saveBasePath.$path;
+        $fullPath = $this->saveBasePath.$path;
 
-		Functions::makeDirectory(dirname($fullPath));
+        Functions::makeDirectory(dirname($fullPath));
 
-		try{
-			$fp = fopen($fullPath, 'w');
+        try{
+            $fp = fopen($fullPath, 'w');
 
-			foreach(Functions::getGenerator($arr) as $k => $v){
-				fwrite($fp, sprintf("%s\n", implode(',', array_map(fn($v): string => "\"{$v}\"", [$k, $v]))));
-			}
-		} finally{
-			fclose($fp);
-		}
-	}
+            foreach(Functions::getGenerator($arr) as $k => $v){
+                fwrite($fp, sprintf("%s\n", implode(',', array_map(fn($v): string => "\"{$v}\"", [$k, $v]))));
+            }
+        } finally{
+            fclose($fp);
+        }
+    }
 }

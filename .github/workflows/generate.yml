@@ -42,8 +42,11 @@ jobs:
           echo "dist directory made."
           php ./main.php
           echo "PHP run."
-          cp ./README.md ./dist/README.md
-          echo "README.md copied."
+
+    - name: Generate index.html by Pandoc
+      uses: docker://pandoc/core
+      with:
+        args: README.md -s -o dist/index.html
 
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
@@ -63,9 +66,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-    # Add a test script to composer.json, for instance: "test": "vendor/bin/phpunit"
-    # Docs: https://getcomposer.org/doc/articles/scripts.md
-
-    # - name: Run test suite
-    #   run: composer run-script test

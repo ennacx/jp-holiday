@@ -7,30 +7,30 @@ use Generator;
 
 class Functions {
 
-	/**
-	 * イテレーブルな引数からデータをYieldする
-	 *
-	 * @param  iterable  $i
-	 * @return Generator
-	 */
-	public static function getGenerator(iterable $i): Generator {
-		foreach($i as $k => $v)
-			yield $k => $v;
-	}
+    /**
+     * イテレーブルな引数からデータをYieldする
+     *
+     * @param  iterable  $i
+     * @return Generator
+     */
+    public static function getGenerator(iterable $i): Generator {
+        foreach($i as $k => $v)
+            yield $k => $v;
+    }
 
-	/**
-	 * ディレクトリ作成
-	 *
-	 * @param  string  $path
-	 * @param  int     $mode
-	 * @param  boolean $recursive
-	 * @return boolean
-	 */
-	public static function makeDirectory(string $path, int $mode = 0755, bool $recursive = true): bool {
+    /**
+     * ディレクトリ作成
+     *
+     * @param  string  $path
+     * @param  int     $mode
+     * @param  boolean $recursive
+     * @return boolean
+     */
+    public static function makeDirectory(string $path, int $mode = 0755, bool $recursive = true): bool {
 
-		if(!file_exists($path) || !is_dir($path))
-			return mkdir($path, $mode, $recursive);
+        if(!file_exists($path) || !is_dir($path))
+            return mkdir($path, $mode, $recursive);
 
-		return true;
-	}
+        return true;
+    }
 }
