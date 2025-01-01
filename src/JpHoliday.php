@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace JpHoliday;
 
-use DateMalformedStringException;
 use DateTime;
 use Exception;
 use JpHoliday\Utils\Functions;
@@ -48,8 +47,6 @@ class JpHoliday {
 
     /**
      * コンストラクター
-     *
-     * @throws DateMalformedStringException
      */
     public function __construct(){
 
@@ -79,12 +76,15 @@ class JpHoliday {
      * @return void
      * @throws Exception
      */
-    public function getHoliday(){
+    public function getHoliday(): void {
 
+        // データを取得して
         $this->getFromGCal();
 
+        // 扱いやすく整理して
         $this->summarizeRaw();
 
+        // ファイル化する
         $this->putFile();
     }
 
@@ -94,7 +94,7 @@ class JpHoliday {
      * @return void
      * @throws Exception
      */
-    private function getFromGCal(){
+    private function getFromGCal(): void {
 
         $result = file_get_contents($this->gCalUrl);
 

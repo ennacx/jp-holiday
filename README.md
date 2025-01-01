@@ -12,7 +12,7 @@ To get basic information about national holidays and festival holidays for the p
 
 Ex. https://ennacx.github.io/jp-holiday/v1/date.json
 
-### Separate national-holiday, festival-holiday
+### Separate national-holidays, festival-holidays
 We also provide a list filtered by national holidays only, and a file filtered by festival holidays only.
 
 National holidays only: https://ennacx.github.io/jp-holiday/v1/shu/date.json<br>
@@ -23,7 +23,7 @@ To get a list divided by year, specify the directory for the year after the vers
 (Data is available for the preceding 5 years.)
 
 Ex.<br>
-2024 japanese holidays: https://ennacx.github.io/jp-holiday/v1/2024/date.json<br>
+2024's Japanese holidays: https://ennacx.github.io/jp-holiday/v1/2024/date.json<br>
 2024's national holidays only: https://ennacx.github.io/jp-holiday/v1/2024/shu/date.json<br>
 2024's festival holidays only: https://ennacx.github.io/jp-holiday/v1/2024/sai/date.json
 
