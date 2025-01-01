@@ -28,7 +28,7 @@ Ex.<br>
 2024's festival holidays only: https://ennacx.github.io/jp-holiday/v1/2024/sai/date.json
 
 ### Date format and Timestamp format
-The contents of file A are objects whose keys are in the format ```'YYYY-MM-DD'``` (```string```) and whose values are the names of holidays
+The contents of file ```date.json``` are objects whose keys are in the format ```'YYYY-MM-DD'``` (```string```) and whose values are the names of holidays
 (In the case of CSV, the first column contains the dates and the second column contains the names of holidays.).<br>
 But we have also prepared a file whose keys are in the format of a timestamp (```integer```).
 When using this, please change ```date.json``` to ```ts.json```.
