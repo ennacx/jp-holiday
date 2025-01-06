@@ -180,22 +180,12 @@ class JpHoliday {
         // 按分
         $div = intval($durationYear / 2);
 
-        $loopYears = [];
         for($i = $this->currentYear - $div; $i <= $this->currentYear + $div; $i++){
-            // 歯抜けの場合はその時点で終了
-            if(!empty($loopYears) && !in_array($i - 1, $loopYears))
-                break;
-
-            // ループ年を記録
-            $loopYears[] = $i;
-
-            // (主に過去) 取得範囲外
             if(!array_key_exists($i, $v))
                 continue;
 
             $ret = array_merge($ret, $v[$i]);
         }
-        unset($loopYears);
 
         return $ret;
     }
