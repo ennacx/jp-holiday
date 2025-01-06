@@ -1,0 +1,17 @@
+{
+  "name": "ennacx/jp-holiday",
+  "description": "Japanese date utility",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "JpHoliday\\": "src/"
+    }
+  },
+  "require": {
+    "php": "^8.3",
+    "phpunit/phpunit": "^11.4"
+  },
+  "scripts": {
+    "test": "phpunit"
+  }
+}
