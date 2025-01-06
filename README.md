@@ -2,7 +2,7 @@
 
 We store Japanese holidays obtained from Google Calendar by year in JSON and CSV formats.
 
-## How to use
+## How to use🤔
 This project is hosted on GitHub Pages.<br>
 [GitHub Pages](https://ennacx.github.io/jp-holiday/)
 
@@ -13,7 +13,7 @@ To get basic information about national holidays and festival holidays for the p
 Ex. https://ennacx.github.io/jp-holiday/v1/date.json
 
 ### Separate national-holidays, festival-holidays
-We also provide a list filtered by national holidays only, and a file filtered by festival holidays only.
+We also provide a list filtered by national holidays only, and a list filtered by festival holidays only.
 
 National holidays only: https://ennacx.github.io/jp-holiday/v1/shu/date.json<br>
 Festival holidays only: https://ennacx.github.io/jp-holiday/v1/sai/date.json
@@ -33,7 +33,7 @@ The contents of file ```date.json``` are objects whose keys are in the format ``
 But we have also prepared a file whose keys are in the format of a timestamp (```integer```).
 When using this, please change ```date.json``` to ```ts.json```.
 
-## Tree
+## Tree🌱
 ```
 v1/
 |- 2020/
@@ -70,7 +70,7 @@ v1/
 -- ts.csv
 ```
 
-## License
+## License🧐
 [MIT](https://en.wikipedia.org/wiki/MIT_License)
 
 [CreativeCommons BY-SA](https://creativecommons.org/licenses/by-sa/4.0/)
