@@ -83,7 +83,7 @@ class JpHoliday {
      * @return void
      * @throws Exception
      */
-    public function getHoliday(){
+    public function generate(): void {
 
         // データを取得して
         $this->getFromGCal();
@@ -103,6 +103,7 @@ class JpHoliday {
      */
     private function getFromGCal(): void {
 
+        // FIXME: [MEMO] php.ini側で allow_url_fopen の値が 0(OFF) だとWarningになる
         $result = file_get_contents($this->gCalUrl);
 
         if($result === false)
@@ -141,9 +142,9 @@ class JpHoliday {
                     $isShukujitsu = false;
                 unset($matches);
 
+                // 最終的に格納するキーと配列
                 $intYear = intval($dateObj->format('Y'));
-
-                $data = [
+                $data    = [
                     'date'      => $dateObj->format('Y-m-d'),
                     'timestamp' => $dateObj->format('U'),
                     'summary'   => $summary
@@ -198,17 +199,6 @@ class JpHoliday {
     private function putFile(): void {
 
         /**
-         * 配列ソートを行うサブファンクション
-         *
-         * @param  array $v
-         * @param  int   $sortFlag
-         * @return void
-         */
-        $sortFunc = function(array &$v, int $sortFlag): void {
-            ksort($v, $sortFlag);
-        };
-
-        /**
          * 指定キーの値をキーとした、祝祭日名の配列を生成するサブファンクション
          *
          * @param  array  $arr
@@ -216,10 +206,10 @@ class JpHoliday {
          * @param  int    $sortFlag
          * @return array
          */
-        $extractFunc = function(array $arr, string $k, int $sortFlag) use(&$sortFunc): array {
+        $extractFunc = function(array $arr, string $k, int $sortFlag): array {
 
             $ret = array_column($arr, 'summary', $k);
-            $sortFunc($ret, $sortFlag);
+            ksort($ret, $sortFlag);
 
             return $ret;
         };
@@ -243,32 +233,41 @@ class JpHoliday {
 
         // n年間
         {
-            // 祝日
+            // 祝日 (Date)
             $dateShuYears = $extractFunc($this->filterYears($this->shukujitsu), 'date', SORT_NATURAL);
-            $tsShuYears   = $extractFunc($this->filterYears($this->shukujitsu), 'timestamp', SORT_NUMERIC);
-            $this->putJson($pathGenerateFunc(self::SHUKUJITSU_DIR_NAME, self::DATE_FILE_NAME), $dateShuYears);
-            $this->putJson($pathGenerateFunc(self::SHUKUJITSU_DIR_NAME, self::TIMESTAMP_FILE_NAME), $tsShuYears);
-            $this->putCsv($pathGenerateFunc(self::SHUKUJITSU_DIR_NAME, self::DATE_FILE_NAME), $dateShuYears);
-            $this->putCsv($pathGenerateFunc(self::SHUKUJITSU_DIR_NAME, self::TIMESTAMP_FILE_NAME), $tsShuYears);
+            $shukujitsuDatePath = $pathGenerateFunc(self::SHUKUJITSU_DIR_NAME, self::DATE_FILE_NAME);
+            $this->putJson($shukujitsuDatePath, $dateShuYears);
+            $this->putCsv($shukujitsuDatePath, $dateShuYears);
+            // 祝日 (Timestamp)
+            $tsShuYears = $extractFunc($this->filterYears($this->shukujitsu), 'timestamp', SORT_NUMERIC);
+            $shukujitsuTimestampPath = $pathGenerateFunc(self::SHUKUJITSU_DIR_NAME, self::TIMESTAMP_FILE_NAME);
+            $this->putJson($shukujitsuTimestampPath, $tsShuYears);
+            $this->putCsv($shukujitsuTimestampPath, $tsShuYears);
 
-            // 祭日
+            // 祭日 (Date)
             $dateSaiYears = $extractFunc($this->filterYears($this->saijitsu), 'date', SORT_NATURAL);
-            $tsSaiYears   = $extractFunc($this->filterYears($this->saijitsu), 'timestamp', SORT_NUMERIC);
-            $this->putJson($pathGenerateFunc(self::SAIJITSU_DIR_NAME, self::DATE_FILE_NAME), $dateSaiYears);
-            $this->putJson($pathGenerateFunc(self::SAIJITSU_DIR_NAME, self::TIMESTAMP_FILE_NAME), $tsSaiYears);
-            $this->putCsv($pathGenerateFunc(self::SAIJITSU_DIR_NAME, self::DATE_FILE_NAME), $dateSaiYears);
-            $this->putCsv($pathGenerateFunc(self::SAIJITSU_DIR_NAME, self::TIMESTAMP_FILE_NAME), $tsSaiYears);
+            $saijitsuDatePath = $pathGenerateFunc(self::SAIJITSU_DIR_NAME, self::DATE_FILE_NAME);
+            $this->putJson($saijitsuDatePath, $dateSaiYears);
+            $this->putCsv($saijitsuDatePath, $dateSaiYears);
+            // 祭日 (Timestamp)
+            $tsSaiYears = $extractFunc($this->filterYears($this->saijitsu), 'timestamp', SORT_NUMERIC);
+            $saijitsuTimestampPath = $pathGenerateFunc(self::SAIJITSU_DIR_NAME, self::TIMESTAMP_FILE_NAME);
+            $this->putJson($saijitsuTimestampPath, $tsSaiYears);
+            $this->putCsv($saijitsuTimestampPath, $tsSaiYears);
 
-            // 祝祭日
+            // 祝祭日 (Date)
             $temp = array_merge($dateSaiYears, $dateShuYears); // FIXME: 祝日優先 (後方上書)
             ksort($temp, SORT_NATURAL);
-            $this->putJson($pathGenerateFunc(null, self::DATE_FILE_NAME), $temp);
-            $this->putCsv($pathGenerateFunc(null, self::DATE_FILE_NAME), $temp);
+            $shukusaiDatePath = $pathGenerateFunc(null, self::DATE_FILE_NAME);
+            $this->putJson($shukusaiDatePath, $temp);
+            $this->putCsv($shukusaiDatePath, $temp);
             unset($temp);
-            $temp = $tsShuYears + $tsSaiYears; // FIXME: 祝日優先 (前方上書)
+            // 祝祭日 (Timestamp)
+            $temp = $tsShuYears + $tsSaiYears; // FIXME: 祝日優先 (前方上書) キーがintなので配列を加算
             ksort($temp, SORT_NUMERIC);
-            $this->putJson($pathGenerateFunc(null, self::TIMESTAMP_FILE_NAME), $temp);
-            $this->putCsv($pathGenerateFunc(null, self::TIMESTAMP_FILE_NAME), $temp);
+            $shukusaiTimestampPath = $pathGenerateFunc(null, self::TIMESTAMP_FILE_NAME);
+            $this->putJson($shukusaiTimestampPath, $temp);
+            $this->putCsv($shukusaiTimestampPath, $temp);
             unset($temp);
         }
 
