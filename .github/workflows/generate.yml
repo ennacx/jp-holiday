@@ -36,12 +36,13 @@ jobs:
     - name: Install dependencies
       run: composer install --prefer-dist --no-progress
 
+    - name: Make direcroty
+      run: |
+        mkdir -p ./dist
+
     - name: Run main
       run: |
-          mkdir -p ./dist
-          echo "dist directory made."
           php ./main.php
-          echo "PHP run."
 
     - name: Generate index.html by Pandoc
       uses: docker://pandoc/core
