@@ -49,17 +49,17 @@ jobs:
       with:
         args: README.md -s -o dist/index.html
 
-    - name: git commit & push
+    - name: git Commit & Push
       run: |
         git config core.filemode false
-        if ! git diff --exit-code --quiet
-        then
-          git add -A
-          git config user.name github-actions
-          git config user.email actions@github.com
-          git commit -m "Auto-Commit by github-actions"
-          git push
-        fi
+          if ! git diff --exit-code --quiet
+          then
+            git add --update
+            git config user.name github-actions
+            git config user.email action@github.com
+            git commit -m "Auto-Commit by github-actions"
+            git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{github.ref}}
+          fi
 
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
