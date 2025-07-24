@@ -29,7 +29,6 @@ class JpHoliday {
     /** @var string 生成ファイル保存ディレクトリ名 */
     private const string DISTRIBUTE_DIR_NAME = 'dist';
 
-    private DateTime $dateObj;
     /** @var int 本年 */
     private int $currentYear;
 
@@ -58,11 +57,13 @@ class JpHoliday {
             define('DS', DIRECTORY_SEPARATOR);
         }
 
+        // タイムゾーン設定
         date_default_timezone_set('Asia/Tokyo');
 
-        $this->dateObj     = new DateTime();
-        $this->currentYear = intval($this->dateObj->format('Y'));
+        // 本年
+        $this->currentYear = intval(date('Y'));
 
+        // メジャーバージョン
         $this->majorVersion = '';
         $temp = file_get_contents(dirname(__DIR__) . DS .'version.txt');
         if($temp !== false){
@@ -70,9 +71,11 @@ class JpHoliday {
         }
         unset($temp);
 
+        // 保存先の基本パス
         $this->saveBasePath = dirname(__DIR__) . DS . self::DISTRIBUTE_DIR_NAME . DS . $this->majorVersion;
         Functions::makeDirectory($this->saveBasePath);
 
+        // 祝祭日ICSを取得するGoogleカレンダーURL
         $this->gCalUrl = sprintf(self::HOLIDAY_BASE_URL, urlencode(self::HOLIDAY_ID));
     }
 
