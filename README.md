@@ -3,11 +3,10 @@
 We store Japanese holidays obtained from Google Calendar by year in JSON and CSV formats.
 
 ## How to use🤔
-This project is hosted on GitHub Pages.<br>
-[GitHub Pages](https://ennacx.github.io/jp-holiday/)
+This project is hosted on [GitHub Pages](https://ennacx.github.io/jp-holiday/).
 
 ### Basic
-To get basic information about national holidays and festival holidays for the past three years, including last year, this year, and next year, access ```date.json``` or ```date.csv```.<br>
+To get basic information about national holidays and festival holidays for the past ***3 years***, including last year, this year, and next year, access ```date.json``` or ```date.csv```.<br>
 (Each version is separated into a directory. ```v1```, ```v2```...)
 
 Ex. https://ennacx.github.io/jp-holiday/v1/date.json
@@ -20,7 +19,7 @@ Festival holidays only: https://ennacx.github.io/jp-holiday/v1/sai/date.json
 
 ### Divide year
 To get a list divided by year, specify the directory for the year after the version.<br>
-(Data is available for the preceding 5 years.)
+(Data is available for the preceding ***5 years***.)
 
 Ex.<br>
 2024's Japanese holidays: https://ennacx.github.io/jp-holiday/v1/2024/date.json<br>

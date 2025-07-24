@@ -5,6 +5,8 @@ namespace JpHoliday;
 
 use DateTime;
 use Exception;
+use JpHoliday\Enums\CalFormat;
+use JpHoliday\Enums\CalType;
 use JpHoliday\Utils\Functions;
 
 /**
@@ -26,16 +28,6 @@ class JpHoliday {
 
     /** @var string 生成ファイル保存ディレクトリ名 */
     private const string DISTRIBUTE_DIR_NAME = 'dist';
-
-    /** @var string 祝日格納ディレクトリ名 */
-    private const string SHUKUJITSU_DIR_NAME = 'shu';
-    /** @var string 祭日格納ディレクトリ名 */
-    private const string SAIJITSU_DIR_NAME = 'sai';
-
-    /** @var string 日付形式のベースファイル名 */
-    private const string DATE_FILE_NAME = 'date';
-    /** @var string 日付形式のベースファイル名 */
-    private const string TIMESTAMP_FILE_NAME = 'ts';
 
     private DateTime $dateObj;
     /** @var int 本年 */
@@ -209,13 +201,13 @@ class JpHoliday {
          * 指定キーの値をキーとした、祝祭日名の配列を生成するサブファンクション
          *
          * @param  array  $arr
-         * @param  string $k
+         * @param  CalFormat $format
          * @param  int    $sortFlag
          * @return array
          */
-        $extractFunc = function(array $arr, string $k, int $sortFlag): array {
+        $extractFunc = function(array $arr, CalFormat $format, int $sortFlag): array {
 
-            $ret = array_column($arr, 'summary', $k);
+            $ret = array_column($arr, 'summary', $format->toString());
             ksort($ret, $sortFlag);
 
             return $ret;
@@ -224,56 +216,57 @@ class JpHoliday {
         /**
          * 保存先フルパス生成サブファンクション
          *
-         * @param  string|null $dir
-         * @param  string      $fileName
+         * @param  CalType $type
+         * @param  string      $format
          * @param  string|null $extension
          * @return string
          */
-        $pathGenerateFunc = function(?string $dir, string $fileName, ?string $extension = null): string {
+        $pathGenerateFunc = function(CalType $type, CalFormat $format, ?string $extension = null): string {
             return sprintf(
                 '%s%s%s%s',
-                ($dir !== null) ? (DS . $dir) : '',
+                ($type !== CalType::BOTH) ? (DS . $type->dirname()) : '',
                 DS,
-                $fileName,
+                $format->filename(),
                 ($extension !== null) ? ".{$extension}" : ''
             );
         };
 
         // n年間
         {
+//            foreach(CalType::cases() as $calType){}
             // 祝日 (Date)
-            $dateShuYears = $extractFunc($this->filterYears($this->shukujitsu), 'date', SORT_NATURAL);
-            $shukujitsuDatePath = $pathGenerateFunc(self::SHUKUJITSU_DIR_NAME, self::DATE_FILE_NAME);
-            Functions::putJson($this->saveBasePath . $shukujitsuDatePath, $dateShuYears);
-            Functions::putCsv($this->saveBasePath . $shukujitsuDatePath, $dateShuYears);
+            $dateShuYears = $extractFunc($this->filterYears($this->shukujitsu), CalFormat::DATE, SORT_NATURAL);
+            $shukujitsuDatePath = $this->saveBasePath . $pathGenerateFunc(CalType::SHU, CalFormat::DATE);
+            Functions::putJson($shukujitsuDatePath, $dateShuYears);
+            Functions::putCsv($shukujitsuDatePath, $dateShuYears);
             // 祝日 (Timestamp)
-            $tsShuYears = $extractFunc($this->filterYears($this->shukujitsu), 'timestamp', SORT_NUMERIC);
-            $shukujitsuTimestampPath = $pathGenerateFunc(self::SHUKUJITSU_DIR_NAME, self::TIMESTAMP_FILE_NAME);
-            Functions::putJson($this->saveBasePath . $shukujitsuTimestampPath, $tsShuYears);
-            Functions::putCsv($this->saveBasePath . $shukujitsuTimestampPath, $tsShuYears);
+            $tsShuYears = $extractFunc($this->filterYears($this->shukujitsu), CalFormat::TIMESTAMP, SORT_NUMERIC);
+            $shukujitsuTimestampPath = $this->saveBasePath . $pathGenerateFunc(CalType::SHU, CalFormat::TIMESTAMP);
+            Functions::putJson($shukujitsuTimestampPath, $tsShuYears);
+            Functions::putCsv($shukujitsuTimestampPath, $tsShuYears);
 
             // 祭日 (Date)
-            $dateSaiYears = $extractFunc($this->filterYears($this->saijitsu), 'date', SORT_NATURAL);
-            $saijitsuDatePath = $pathGenerateFunc(self::SAIJITSU_DIR_NAME, self::DATE_FILE_NAME);
-            Functions::putJson($this->saveBasePath . $saijitsuDatePath, $dateSaiYears);
-            Functions::putCsv($this->saveBasePath . $saijitsuDatePath, $dateSaiYears);
+            $dateSaiYears = $extractFunc($this->filterYears($this->saijitsu), CalFormat::DATE, SORT_NATURAL);
+            $saijitsuDatePath = $this->saveBasePath . $pathGenerateFunc(CalType::SAI, CalFormat::DATE);
+            Functions::putJson($saijitsuDatePath, $dateSaiYears);
+            Functions::putCsv($saijitsuDatePath, $dateSaiYears);
             // 祭日 (Timestamp)
-            $tsSaiYears = $extractFunc($this->filterYears($this->saijitsu), 'timestamp', SORT_NUMERIC);
-            $saijitsuTimestampPath = $pathGenerateFunc(self::SAIJITSU_DIR_NAME, self::TIMESTAMP_FILE_NAME);
-            Functions::putJson($this->saveBasePath . $saijitsuTimestampPath, $tsSaiYears);
-            Functions::putCsv($this->saveBasePath . $saijitsuTimestampPath, $tsSaiYears);
+            $tsSaiYears = $extractFunc($this->filterYears($this->saijitsu), CalFormat::TIMESTAMP, SORT_NUMERIC);
+            $saijitsuTimestampPath = $this->saveBasePath . $pathGenerateFunc(CalType::SAI, CalFormat::TIMESTAMP);
+            Functions::putJson($saijitsuTimestampPath, $tsSaiYears);
+            Functions::putCsv($saijitsuTimestampPath, $tsSaiYears);
 
             // 祝祭日 (Date)
             $temp = array_merge($dateSaiYears, $dateShuYears); // FIXME: 祝日優先 (後方上書)
             ksort($temp, SORT_NATURAL);
-            $shukusaiDatePath = $pathGenerateFunc(null, self::DATE_FILE_NAME);
-            Functions::putJson($this->saveBasePath . $shukusaiDatePath, $temp);
-            Functions::putCsv($this->saveBasePath . $shukusaiDatePath, $temp);
+            $shukusaiDatePath = $this->saveBasePath . $pathGenerateFunc(CalType::BOTH, CalFormat::DATE);
+            Functions::putJson($shukusaiDatePath, $temp);
+            Functions::putCsv($shukusaiDatePath, $temp);
             unset($temp);
             // 祝祭日 (Timestamp)
             $temp = $tsShuYears + $tsSaiYears; // FIXME: 祝日優先 (前方上書) キーがintなので配列を加算
             ksort($temp, SORT_NUMERIC);
-            $shukusaiTimestampPath = $this->saveBasePath . $pathGenerateFunc(null, self::TIMESTAMP_FILE_NAME);
+            $shukusaiTimestampPath = $this->saveBasePath . $pathGenerateFunc(CalType::BOTH, CalFormat::TIMESTAMP);
             Functions::putJson($shukusaiTimestampPath, $temp);
             Functions::putCsv($shukusaiTimestampPath, $temp);
             unset($temp);
@@ -286,27 +279,23 @@ class JpHoliday {
              *
              * @param  int         $year
              * @param  array       $arr
-             * @param  string|null $s
+             * @param  CalType $type
              * @return void
              */
-            $saveFunc = function(int $year, array $arr, ?string $s = null) use(&$extractFunc, &$pathGenerateFunc){
+            $saveFunc = function(int $year, array $arr, CalType $type = CalType::BOTH) use(&$extractFunc, &$pathGenerateFunc){
 
-                $temp1 = $extractFunc($arr, 'date', SORT_NATURAL);
-                $temp2 = $extractFunc($arr, 'timestamp', SORT_NATURAL);
+                $temp1 = $extractFunc($arr, CalFormat::DATE, SORT_NATURAL);
+                $temp2 = $extractFunc($arr, CalFormat::TIMESTAMP, SORT_NATURAL);
 
-                $path = strval($year);
-                if($s !== null)
-                    $path .= (DS . $s);
-
-                $tempDatePath      = $this->saveBasePath . $pathGenerateFunc($path, self::DATE_FILE_NAME);
-                $tempTimestampPath = $this->saveBasePath . $pathGenerateFunc($path, self::TIMESTAMP_FILE_NAME);
+                $tempDatePath      = $this->saveBasePath . DS . $year . $pathGenerateFunc($type, CalFormat::DATE);
+                $tempTimestampPath = $this->saveBasePath . DS . $year . $pathGenerateFunc($type, CalFormat::TIMESTAMP);
 
                 Functions::putJson($tempDatePath, $temp1);
                 Functions::putCsv($tempDatePath, $temp1);
                 Functions::putJson($tempTimestampPath, $temp2);
                 Functions::putCsv($tempTimestampPath, $temp2);
 
-                unset($temp1, $temp2, $path, $tempDatePath, $tempTimestampPath);
+                unset($temp1, $temp2, $tempDatePath, $tempTimestampPath);
             };
 
             $years = array_unique(array_merge(
@@ -321,15 +310,15 @@ class JpHoliday {
                 $merge = array_merge($saiArr, $shuArr); // FIXME: 祝日優先 (後方上書)
 
                 if(!empty($merge))
-                    $saveFunc($year, $merge);
+                    $saveFunc($year, $merge, CalType::BOTH);
                 unset($merge);
 
                 if(!empty($shuArr))
-                    $saveFunc($year, $shuArr, self::SHUKUJITSU_DIR_NAME);
+                    $saveFunc($year, $shuArr, CalType::SHU);
                 unset($shuArr);
 
                 if(!empty($saiArr))
-                    $saveFunc($year, $saiArr, self::SAIJITSU_DIR_NAME);
+                    $saveFunc($year, $saiArr, CalType::SAI);
                 unset($saiArr);
             }
         }
