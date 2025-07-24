@@ -155,7 +155,7 @@ class JpHoliday {
                 unset($matches);
 
                 // 時刻のリセット
-                $dateObj->setTime(0, 0, 0);
+                $dateObj->setTime(0, 0);
 
                 // 最終的に格納するキーと配列
                 $intYear = intval($dateObj->format('Y'));
