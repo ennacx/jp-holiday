@@ -196,11 +196,11 @@ class JpHoliday {
             $bothArr = [];
 
             // 祝祭日は祝日と祭日のデータを使うためこのループでは処理しない
-            foreach([CalType::SHU, CalType::SAI] as $calType){
+            foreach([CalType::SHUKUJITSU, CalType::SAIJITSU] as $calType){
                 // 対象となるデータ
                 $arr = match($calType){
-                    CalType::SHU  => $this->filterYears($this->shukujitsu),
-                    CalType::SAI  => $this->filterYears($this->saijitsu)
+                    CalType::SHUKUJITSU => $this->filterYears($this->shukujitsu),
+                    CalType::SAIJITSU   => $this->filterYears($this->saijitsu)
                 };
 
                 $bothArr = array_merge($bothArr, $arr);
@@ -233,9 +233,9 @@ class JpHoliday {
                 foreach(CalType::cases() as $calType){
                     // 対象となるデータ
                     $arr = match($calType){
-                        CalType::SHU  => $shuArr,
-                        CalType::SAI  => $saiArr,
-                        CalType::BOTH => $merge
+                        CalType::SHUKUJITSU => $shuArr,
+                        CalType::SAIJITSU   => $saiArr,
+                        CalType::BOTH       => $merge
                     };
 
                     $this->filePutter($arr, $calType, $year);

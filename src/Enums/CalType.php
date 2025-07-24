@@ -9,20 +9,24 @@ namespace JpHoliday\Enums;
 enum CalType {
 
     /** 祝日 */
-    case SHU;
+    case SHUKUJITSU;
 
     /** 祭日 */
-    case SAI;
+    case SAIJITSU;
 
     /** 祝祭日 */
     case BOTH;
 
-    /** 対応するディレクトリ名 */
+    /**
+     * 対応するディレクトリ名
+     *
+     * @return string|null
+     */
     public function dirname(): ?string {
         return match($this){
-            self::SHU => 'shu',
-            self::SAI => 'sai',
-            self::BOTH => null
+            self::SHUKUJITSU  => 'shu',
+            self::SAIJITSU    => 'sai',
+            self::BOTH        => null
         };
     }
 }
