@@ -95,10 +95,15 @@ class JpHoliday {
     }
 
     /**
-     * GoogleカレンダーからICS取得
+     * Fetches calendar data from the Google Calendar URL and stores the raw data.
+     *
+     * This method retrieves the content of the calendar from the URL specified by
+     * the `gCalUrl` property. If the retrieval fails, an exception is thrown. The
+     * raw data is cleaned of carriage return characters and stored in the `raw`
+     * property.
      *
      * @return void
-     * @throws Exception
+     * @throws Exception If the calendar data could not be read.
      */
     private function getFromGCal(): void {
 
@@ -113,7 +118,12 @@ class JpHoliday {
     }
 
     /**
-     * ICS生データを整理する
+     * Processes and summarizes raw holiday data.
+     *
+     * The method parses the raw holiday data and extracts information such as date, name (summary),
+     * and whether the holiday is classified as a public holiday or not. This processed data is then
+     * categorized into respective arrays for public holidays (shukujitsu) and other festivals (saijitsu),
+     * organized by year.
      *
      * @return void
      */
@@ -163,73 +173,15 @@ class JpHoliday {
     }
 
     /**
-     * 本年を中心とした前後年にフィルタリング
+     * Processes and outputs files containing information regarding holidays and festivals
+     * for specific years and different calendar types.
      *
-     * @param  array $v
-     * @return array
-     */
-    private function filterYears(array $v): array {
-
-        // 取得間隔
-        $durationYear = self::FILTER_YEARS;
-        if(self::FILTER_YEARS <= 2 || self::FILTER_YEARS > 10)
-            $durationYear = 2;
-        else if(self::FILTER_YEARS % 2 === 1)
-            $durationYear = self::FILTER_YEARS - 1;
-
-        // 按分
-        $div = intval($durationYear / 2);
-        //return array_filter($v, fn(int $year): bool => ($year >= ($this->currentYear - $div) && $year <= ($this->currentYear + $div)), ARRAY_FILTER_USE_KEY);
-        $ret=[];
-        for($i = $this->currentYear - $div; $i <= $this->currentYear + $div; $i++){
-            if(!array_key_exists($i, $v))
-                continue;
-
-            $ret = array_merge($ret, $v[$i]);
-        }
-
-        return $ret;
-    }
-
-    /**
-     * 指定キーの値をキーとした、祝祭日名の配列を生成
-     *
-     * @param  array  $arr
-     * @param  CalFormat $format
-     * @param  int    $sortFlag
-     * @return array
-     */
-    private function extractor(array $arr, CalFormat $format, int $sortFlag): array {
-
-        $ret = array_column($arr, 'summary', $format->toString());
-        ksort($ret, $sortFlag);
-
-        return $ret;
-    }
-
-    /**
-     * 保存先のフルパスを生成
-     *
-     * @param  CalType     $type
-     * @param  CalFormat   $format
-     * @param  string|null $sepDir
-     * @param  string|null $extension
-     * @return string
-     */
-    private function makeSavePath(CalType $type, CalFormat $format, ?string $sepDir = null, ?string $extension = null): string {
-        return sprintf(
-            '%s%s%s%s%s%s',
-            $this->saveBasePath,
-            ($sepDir !== null) ? (DS . $sepDir) : '',
-            ($type !== CalType::BOTH) ? (DS . $type->dirname()) : '',
-            DS,
-            $format->filename(),
-            ($extension !== null) ? ".{$extension}" : ''
-        );
-    }
-
-    /**
-     * ファイル化
+     * Divides the data into various calendar types such as holidays, festivals,
+     * and a combination of both. The method executes the following tasks:
+     * 1. Processes data grouped by calendar type (holidays and festivals),
+     *    combines them, and outputs the combined data as well.
+     * 2. Processes and outputs data categorized year by year for holidays, festivals,
+     *    and their combination, while ensuring proper priority.
      *
      * @return void
      */
@@ -250,25 +202,13 @@ class JpHoliday {
 
                 $bothArr = array_merge($bothArr, $arr);
 
-                foreach(CalFormat::cases() as $calFormat){
-                    $extracted = $this->extractor($arr, $calFormat, ($calFormat === CalFormat::DATE) ? SORT_NATURAL : SORT_NUMERIC);
-                    $path = $this->makeSavePath($calType, $calFormat);
-
-                    Functions::putJson($path, $extracted);
-                    Functions::putCsv($path, $extracted);
-                }
+                $this->filePutter($arr, $calType);
 
                 unset($arr);
             }
 
             // 祝祭日の処理
-            foreach(CalFormat::cases() as $calFormat){
-                $extracted = $this->extractor($bothArr, $calFormat, ($calFormat === CalFormat::DATE) ? SORT_NATURAL : SORT_NUMERIC);
-                $path = $this->makeSavePath(CalType::BOTH, $calFormat);
-
-                Functions::putJson($path, $extracted);
-                Functions::putCsv($path, $extracted);
-            }
+            $this->filePutter($bothArr, CalType::BOTH);
 
             unset($bothArr);
         }
@@ -285,7 +225,7 @@ class JpHoliday {
                 // 各年の祝日・祭日・祝祭日データ
                 $shuArr = $this->shukujitsu[$year] ?? [];
                 $saiArr = $this->saijitsu[$year] ?? [];
-                $merge = array_merge($saiArr, $shuArr); // FIXME: 祝日優先 (後方上書)
+                $merge  = array_merge($saiArr, $shuArr); // FIXME: 祝日優先 (後方上書)
 
                 foreach(CalType::cases() as $calType){
                     // 対象となるデータ
@@ -295,15 +235,87 @@ class JpHoliday {
                         CalType::BOTH => $merge
                     };
 
-                    foreach(CalFormat::cases() as $calFormat){
-                        $extracted = $this->extractor($arr, $calFormat, ($calFormat === CalFormat::DATE) ? SORT_NATURAL : SORT_NUMERIC);
-                        $path = $this->makeSavePath($calType, $calFormat, sepDir: strval($year));
-
-                        Functions::putJson($path, $extracted);
-                        Functions::putCsv($path, $extracted);
-                    }
+                    $this->filePutter($arr, $calType, $year);
                 }
             }
+        }
+    }
+
+    /**
+     * Filters the provided array of years based on a specified time range.
+     *
+     * The filtering is determined by the `FILTER_YEARS` constant. If `FILTER_YEARS` is
+     * less than or equal to 2, or greater than 10, the default range is set to 2. For
+     * odd values of `FILTER_YEARS` within the allowed range, it is adjusted to the nearest
+     * lower even value. The filtering range is calculated as half of the adjusted `FILTER_YEARS`.
+     *
+     * @param array $v An associative array where keys represent years and the values are arrays
+     *                 containing data associated with the respective year.
+     * @return array A filtered array containing the merged values for years within the calculated range.
+     */
+    private function filterYears(array $v): array {
+
+        // 取得間隔
+        $durationYear = self::FILTER_YEARS;
+        if(self::FILTER_YEARS <= 2 || self::FILTER_YEARS > 10)
+            $durationYear = 2;
+        else if(self::FILTER_YEARS % 2 === 1)
+            $durationYear = self::FILTER_YEARS - 1;
+
+        // 按分
+        $div = intval($durationYear / 2);
+
+        // 範囲内の各年を一つにまとめる
+        $ret = [];
+        for($i = $this->currentYear - $div; $i <= $this->currentYear + $div; $i++){
+            if(!array_key_exists($i, $v))
+                continue;
+
+            $ret = array_merge($ret, $v[$i]);
+        }
+
+        return $ret;
+    }
+
+    /**
+     * Extracts and sorts data from an array based on the given format and sorting flag.
+     *
+     * @param  array     $arr      The input array to be processed.
+     * @param  CalFormat $format   The format used to extract 'summary' data from the array.
+     * @param  int       $sortFlag The sorting flag used to determine the sorting behavior.
+     * @return array The extracted and sorted data as an associative array.
+     */
+    private function extractor(array $arr, CalFormat $format, int $sortFlag): array {
+
+        $ret = array_column($arr, 'summary', $format->toString());
+        ksort($ret, $sortFlag);
+
+        return $ret;
+    }
+
+    /**
+     * Processes an array of data and generates output files in different formats (JSON, CSV)
+     * based on the given calendar type and year.
+     *
+     * @param  array    $arr     The input array containing data to process.
+     * @param  CalType  $calType The calendar type that determines the directory structure for output files.
+     * @param  int|null $year    An optional parameter specifying the year for the output files. Defaults to null.
+     * @return void
+     */
+    private function filePutter(array $arr, CalType $calType, ?int $year = null): void {
+
+        foreach(CalFormat::cases() as $calFormat){
+            $extracted = $this->extractor($arr, $calFormat, ($calFormat === CalFormat::DATE) ? SORT_NATURAL : SORT_NUMERIC);
+            $path = sprintf(
+                '%s%s%s%s',
+                $this->saveBasePath,
+                ($year !== null) ? (DS . $year) : '',
+                ($calType !== CalType::BOTH) ? (DS . $calType->dirname()) : '',
+                DS . $calFormat->filename()
+            );
+
+            Functions::putJson($path, $extracted);
+            Functions::putCsv($path, $extracted);
         }
     }
 }
