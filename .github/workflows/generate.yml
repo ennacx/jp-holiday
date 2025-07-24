@@ -47,7 +47,7 @@ jobs:
     - name: Generate index.html by Pandoc
       uses: docker://pandoc/core
       with:
-        args: README.md -s -o dist/index.html
+        args: -f markdown -t html5 README.md -s -c ./github-markdown-dark.css -o dist/index.html
 
     - name: git Commit & Push
       run: |
