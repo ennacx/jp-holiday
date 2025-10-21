@@ -9,7 +9,9 @@
   },
   "require": {
     "php": "^8.3",
-    "phpunit/phpunit": "^11.4"
+    "ext-curl": "*",
+    "phpunit/phpunit": "^11.4",
+    "sabre/vobject": "^4.5"
   },
   "scripts": {
     "test": "phpunit"

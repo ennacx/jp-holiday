@@ -29,4 +29,17 @@ enum CalType {
             self::BOTH        => null
         };
     }
+
+    /**
+     * キー名変換
+     *
+     * @return string
+     */
+    public function toString(): string {
+        return match($this){
+            self::SHUKUJITSU  => 'shukujitsu',
+            self::SAIJITSU    => 'saijitsu',
+            self::BOTH        => 'both'
+        };
+    }
 }

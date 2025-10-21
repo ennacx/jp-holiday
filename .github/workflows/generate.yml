@@ -39,10 +39,11 @@ jobs:
     - name: Make directory
       run: |
         mkdir -p ./dist
+        mkdir -p ./.cache
 
     - name: Run main
       run: |
-          php ./main.php
+        php -d detect_unicode=0 ./main.php
 
     - name: Generate index.html by Pandoc
       uses: docker://pandoc/core
