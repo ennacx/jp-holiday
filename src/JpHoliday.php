@@ -170,9 +170,8 @@ class JpHoliday {
                 // 祝祭日判定
                 $desc = $event->DESCRIPTION->getValue();
                 $isShukujitsu = true;
-                if(str_contains($desc, "祭日") || in_array($summary, self::EXCLUDE_HOLIDAY_NAMES, true)){
+                if(str_contains($desc, "祭日") || in_array($summary, self::EXCLUDE_HOLIDAY_NAMES, true))
                     $isShukujitsu = false;
-                }
 
                 // DTSTART は DATE(終日) or DATETIME(UTC)が来るので日本時間に変更
                 $dateObj = $event->DTSTART->getDateTime();

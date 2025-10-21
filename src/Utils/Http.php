@@ -75,7 +75,7 @@ class Http {
 
         // 更新された場合のみ保存
         file_put_contents($cacheBody, $normalized);
-        file_put_contents($cacheHash, $newHash);
+        file_put_contents($cacheHash, trim($newHash), LOCK_EX);
 
         return ['status' => 200, 'body' => $normalized];
     }
@@ -92,9 +92,20 @@ class Http {
         $lines = preg_split('/\r\n|\n|\r/', $body);
 
         $filtered = [];
+        $vTimezoneSkip = false;
         foreach($lines as $line){
+            // VTIMEZONEブロックの中身が微妙に揺れることがあるので、ここは丸ごと落とす
+            if(preg_match('/^BEGIN:VTIMEZONE/i', $line)){
+                $vTimezoneSkip = true;
+                continue;
+            }
+            if(preg_match('/^END:VTIMEZONE/i', $line)){
+                $vTimezoneSkip = false;
+                continue;
+            }
+
             // 変動する可能性の高い行をスキップ
-            if(preg_match('/^(DTSTAMP|PRODID|LAST-MODIFIED|CREATED|SEQUENCE):/i', $line))
+            if($vTimezoneSkip || preg_match('/^(DTSTAMP|PRODID|LAST-MODIFIED|CREATED|SEQUENCE):/i', $line))
                 continue;
 
             $filtered[] = rtrim($line);
