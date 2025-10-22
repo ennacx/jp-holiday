@@ -75,4 +75,18 @@ class Functions {
             fclose($fp);
         }
     }
+
+    /**
+     * Sorts a multidimensional array first by its keys and then by inner arrays based on `timestamp` values.
+     *
+     * @param array &$arr The array to be sorted. The function modifies this array in place.
+     * @return void
+     */
+    public static function sorter(array &$arr): void {
+
+        ksort($arr);
+        foreach($arr as $year => &$v){
+            usort($v, fn($a, $b): int => strcmp($a['timestamp'], $b['timestamp']));
+        }
+    }
 }

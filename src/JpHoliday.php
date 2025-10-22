@@ -42,8 +42,6 @@ class JpHoliday {
     /** @var string 結果ファイル保存の基本パス */
     private string $saveBasePath;
 
-    /** @var string GoogleカレンダーのICS取得実URL */
-    private string $gCalUrl;
     /** @var string|null Rawデータ */
     private ?string $raw = null;
 
@@ -88,9 +86,6 @@ class JpHoliday {
         // 保存先の基本パス
         $this->saveBasePath = dirname(__DIR__) . DS . self::DISTRIBUTE_DIR_NAME . DS . $this->majorVersion;
         Functions::makeDirectory($this->saveBasePath);
-
-        // 祝祭日ICSを取得するGoogleカレンダーURL
-        $this->gCalUrl = sprintf(self::HOLIDAY_BASE_URL, urlencode(self::HOLIDAY_ID));
     }
 
     /**
@@ -112,23 +107,19 @@ class JpHoliday {
     }
 
     /**
-     * Fetches calendar data from the Google Calendar URL and stores the raw data.
-     *
-     * This method retrieves the content of the calendar from the URL specified by
-     * the `gCalUrl` property. If the retrieval fails, an exception is thrown. The
-     * raw data is cleaned of carriage return characters and stored in the `raw`
-     * property.
+     * Retrieves data from Google Calendar, applying caching logic to reduce unnecessary HTTP requests.
+     * It checks for a cached copy and updates only if the remote resource has changed.
      *
      * @return void
-     * @throws Exception If the calendar data could not be read.
+     * @throws Exception If the retrieved calendar data is empty or HTTP status is invalid.
      */
     private function getFromGCal(): void {
 
         // キャッシュ判定後の実データ取得
-        $res = Http::getWithLocalCache($this->gCalUrl, $this->cacheDir);
+        $res = Http::getIcsWithLocalCache($this->cacheDir);
 
         if($res['status'] === 304){
-            echo "Http status is 304 (Skip). {$this->gCalUrl}" . PHP_EOL;
+            echo 'Http status is 304 (Skip). '. Http::getUrl() . PHP_EOL;
 
             // 後段で "変化なし → スキップ" の判定に使うための空値
             $this->raw = '';
@@ -136,7 +127,7 @@ class JpHoliday {
             return;
         }
 
-        echo "Http status is {$res['status']} (Update). {$this->gCalUrl}". PHP_EOL;
+        echo "Http status is {$res['status']} (Update). ". Http::getUrl() . PHP_EOL;
 
         $body = $res['body'] ?? '';
         if($body === '')
@@ -193,6 +184,10 @@ class JpHoliday {
                 else
                     $this->saijitsu[$intYear][] = $data;
             }
+
+            // ソート
+            Functions::sorter($this->shukujitsu);
+            Functions::sorter($this->saijitsu);
         }
     }
 

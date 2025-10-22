@@ -23,16 +23,24 @@ class Http {
     private const string CACHE_HASH_NAME = 'gcal_raw.sha256';
 
     /**
+     * Constructs and returns a formatted URL string based on predefined constants.
+     *
+     * @return string The formatted URL string.
+     */
+    public static function getUrl(): string {
+        return sprintf(self::HOLIDAY_BASE_URL, urlencode(self::HOLIDAY_ID));
+    }
+
+    /**
      * Fetches data from a given URL and caches the response locally. Bypasses
      * the download if the remote content has not changed based on a hash comparison.
      *
-     * @param string $url        The URL to fetch data from.
      * @param string $cachePath  The path where the local cache is stored.
      * @param int    $timeoutSec The timeout duration for the HTTP request in seconds. Defaults to 10.
      * @return array An associative array containing the HTTP status code and the response body. If the content has not changed, status is 304 and body is empty.
      * @throws Exception If the cache path is invalid, an HTTP error occurs, or the response body is empty.
      */
-    public static function getWithLocalCache(string $url, string $cachePath, int $timeoutSec = 10): array {
+    public static function getIcsWithLocalCache(string $cachePath, int $timeoutSec = 10): array {
 
         if(!file_exists($cachePath) || !is_dir($cachePath))
             throw new Exception("Cache path does not exist: {$cachePath}");
@@ -45,7 +53,10 @@ class Http {
 
         // cURLでダウンロード
         try{
-            $ch = curl_init(sprintf(self::HOLIDAY_BASE_URL, urlencode(self::HOLIDAY_ID)));
+            $ch = curl_init(self::getUrl());
+            if($ch === false)
+                throw new Exception('Failed to initialize cURL');
+
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
@@ -55,8 +66,10 @@ class Http {
             ]);
             $body = curl_exec($ch);
             $status = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        } catch(Exception $e){
+            throw new Exception("cURL error: {$e->getMessage()}");
         } finally{
-            if($ch !== false)
+            if(isset($ch) && $ch !== false)
                 curl_close($ch);
         }
 
@@ -98,8 +111,7 @@ class Http {
             if(preg_match('/^BEGIN:VTIMEZONE/i', $line)){
                 $vTimezoneSkip = true;
                 continue;
-            }
-            if(preg_match('/^END:VTIMEZONE/i', $line)){
+            } else if(preg_match('/^END:VTIMEZONE/i', $line)){
                 $vTimezoneSkip = false;
                 continue;
             }
