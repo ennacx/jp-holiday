@@ -41,9 +41,23 @@ jobs:
         mkdir -p ./dist
         mkdir -p ./.cache
 
+    - name: Restore calendar cache
+      uses: actions/cache@v4
+      with:
+        path: .cache
+        key: jp-holiday-gcal-cache-${{ runner.os }}
+        restore-keys: |
+          jp-holiday-gcal-cache-
+
     - name: Run main
       run: |
         php -d detect_unicode=0 ./main.php
+
+    - name: Save calendar cache
+      uses: actions/cache@v4
+      with:
+        path: .cache
+        key: jp-holiday-gcal-cache-${{ runner.os }}-${{ github.run_id }}
 
     - name: Generate index.html by Pandoc
       uses: docker://pandoc/core
