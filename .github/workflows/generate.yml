@@ -1,10 +1,10 @@
-name: Calendar generate
+name: JP-Holiday Calendar generate
 
 on:
   push:
     branches: [ "master" ]
   schedule:
-    - cron:  '15 0 1 * *'
+    - cron:  '0 0 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -39,10 +39,11 @@ jobs:
     - name: Make directory
       run: |
         mkdir -p ./dist
+        mkdir -p ./.cache
 
     - name: Run main
       run: |
-          php ./main.php
+        php -d detect_unicode=0 ./main.php
 
     - name: Generate index.html by Pandoc
       uses: docker://pandoc/core
@@ -55,10 +56,10 @@ jobs:
           if ! git diff --exit-code --quiet
           then
             git add --update
-            git config user.name github-actions
-            git config user.email action@github.com
-            git commit -m "Auto-Commit by github-actions"
-            git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{github.ref}}
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "[Update] Auto-Commit by github-actions $(date -u +%F)" || echo "No changes to commit"
+            git push
           fi
 
     - name: Upload Pages artifact

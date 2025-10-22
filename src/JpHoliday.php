@@ -4,10 +4,14 @@ declare(strict_types=1);
 namespace JpHoliday;
 
 use DateTime;
+use DateTimeInterface;
+use DateTimeZone;
 use Exception;
 use JpHoliday\Enums\CalFormat;
 use JpHoliday\Enums\CalType;
 use JpHoliday\Utils\Functions;
+use JpHoliday\Utils\Http;
+use Sabre\VObject;
 
 /**
  * Googleカレンダーから祝祭日を取得
@@ -38,8 +42,6 @@ class JpHoliday {
     /** @var string 結果ファイル保存の基本パス */
     private string $saveBasePath;
 
-    /** @var string GoogleカレンダーのICS取得実URL */
-    private string $gCalUrl;
     /** @var string|null Rawデータ */
     private ?string $raw = null;
 
@@ -48,14 +50,24 @@ class JpHoliday {
     /** @var array 祭日 */
     private array $saijitsu = [];
 
+    /** @var string キャッシュディレクトリ */
+    private string $cacheDir;
+
     /**
      * コンストラクター
      */
     public function __construct(){
 
-        if(!defined('DS')){
+        // Directory sparator
+        if(!defined('DS'))
             define('DS', DIRECTORY_SEPARATOR);
-        }
+
+        // キャッシュディレクトリパス
+        $this->cacheDir = dirname(__DIR__) . DS . '.cache';
+
+        // キャッシュディレクトリ作成
+        if(!file_exists($this->cacheDir) || !is_dir($this->cacheDir))
+            Functions::makeDirectory($this->cacheDir);
 
         // タイムゾーン設定
         date_default_timezone_set('Asia/Tokyo');
@@ -74,9 +86,6 @@ class JpHoliday {
         // 保存先の基本パス
         $this->saveBasePath = dirname(__DIR__) . DS . self::DISTRIBUTE_DIR_NAME . DS . $this->majorVersion;
         Functions::makeDirectory($this->saveBasePath);
-
-        // 祝祭日ICSを取得するGoogleカレンダーURL
-        $this->gCalUrl = sprintf(self::HOLIDAY_BASE_URL, urlencode(self::HOLIDAY_ID));
     }
 
     /**
@@ -98,26 +107,43 @@ class JpHoliday {
     }
 
     /**
-     * Fetches calendar data from the Google Calendar URL and stores the raw data.
+     * Writes the current date and time in ISO 8601 format to a predefined file.
      *
-     * This method retrieves the content of the calendar from the URL specified by
-     * the `gCalUrl` property. If the retrieval fails, an exception is thrown. The
-     * raw data is cleaned of carriage return characters and stored in the `raw`
-     * property.
+     * @return int|false Returns the number of bytes written to the file, or false on failure.
+     */
+    public function putTimestamp(): int|false {
+
+        if($this->raw === '')
+            return false;
+
+        // スケジュール実行用のGit更新対象ファイルに実行日時を上書き
+        return file_put_contents('.exec_timestamp', date('Y-m-d\TH:i:sO'));
+    }
+
+    /**
+     * Retrieves data from Google Calendar, applying caching logic to reduce unnecessary HTTP requests.
+     * It checks for a cached copy and updates only if the remote resource has changed.
      *
      * @return void
-     * @throws Exception If the calendar data could not be read.
+     * @throws Exception If the retrieved calendar data is empty or HTTP status is invalid.
      */
     private function getFromGCal(): void {
 
-        // FIXME: [MEMO] php.ini側で allow_url_fopen の値が 0(OFF) だとWarningになる
-        $result = file_get_contents($this->gCalUrl);
+        // キャッシュ判定後の実データ取得
+        $res = Http::getIcsWithLocalCache($this->cacheDir);
 
-        if($result === false)
-            throw new Exception('Could not read calendar');
+        if($res['status'] === 304){
+            echo 'Http status is 304 (Skip). '. Http::getUrl() . PHP_EOL;
 
-        if($result !== '')
-            $this->raw = str_replace("\r", '', $result);
+            // 後段で "変化なし → スキップ" の判定に使うための空値
+            $this->raw = '';
+        } else{
+            echo "Http status is {$res['status']} (Update). ". Http::getUrl() . PHP_EOL;
+
+            $this->raw = str_replace("\r", '', $res['body'] ?? '');
+            if($this->raw === '')
+                throw new Exception('Empty ICS body');
+        }
     }
 
     /**
@@ -132,30 +158,27 @@ class JpHoliday {
      */
     private function summarizeRaw(): void {
 
-        if(!empty($this->raw)){
-            foreach(Functions::getGenerator(explode('END:VEVENT', $this->raw)) as $holidayRaw){
-                // 日付取得
-                if(empty(preg_match('/DTSTART;VALUE=DATE:(?<date>\d{8})/m', $holidayRaw, $matches)))
-                    continue;
-                $dateObj = DateTime::createFromFormat('Ymd', $matches['date']);
-                if($dateObj === false)
-                    continue;
-                unset($matches);
+        $DateTimeZone = new DateTimeZone('Asia/Tokyo');
 
+        if(!empty($this->raw)){
+            $vcal = VObject\Reader::read($this->raw);
+            foreach($vcal->select('VEVENT') as $event){
                 // 名称取得
-                if(empty(preg_match('/SUMMARY:(?<summary>.+)/m', $holidayRaw, $matches)) || !isset($matches['summary']))
+                $summary = $event->SUMMARY->getValue();
+                if(empty($summary))
                     continue;
-                $summary = $matches['summary'];
-                unset($matches);
 
                 // 祝祭日判定
+                $desc = $event->DESCRIPTION->getValue();
                 $isShukujitsu = true;
-                if(!empty(preg_match('/DESCRIPTION:(?<desc>.+)/m', $holidayRaw, $matches)) && (str_contains($matches['desc'], "祭日") || in_array($summary, self::EXCLUDE_HOLIDAY_NAMES, true)))
+                if(str_contains($desc, "祭日") || in_array($summary, self::EXCLUDE_HOLIDAY_NAMES, true))
                     $isShukujitsu = false;
-                unset($matches);
 
-                // 時刻のリセット
-                $dateObj->setTime(0, 0);
+                // DTSTART は DATE(終日) or DATETIME(UTC)が来るので日本時間に変更
+                $dateObj = $event->DTSTART->getDateTime();
+                if($dateObj === null || !($dateObj instanceof DateTimeInterface))
+                    continue;
+                $dateObj = $dateObj->setTimezone($DateTimeZone);
 
                 // 最終的に格納するキーと配列
                 $intYear = intval($dateObj->format('Y'));
@@ -165,13 +188,16 @@ class JpHoliday {
                     'summary'   => $summary
                 ];
 
+                // 配列格納
                 if($isShukujitsu)
                     $this->shukujitsu[$intYear][] = $data;
                 else
                     $this->saijitsu[$intYear][] = $data;
-
-                unset($data);
             }
+
+            // ソート
+            Functions::sorter($this->shukujitsu);
+            Functions::sorter($this->saijitsu);
         }
     }
 
@@ -189,6 +215,9 @@ class JpHoliday {
      * @return void
      */
     private function putFile(): void {
+
+        if(empty($this->shukujitsu) && empty($this->saijitsu))
+            return;
 
         // n年間
         {

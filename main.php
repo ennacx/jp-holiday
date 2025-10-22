@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 require 'vendor/autoload.php';
 
-try{
-    (new JpHoliday\JpHoliday())->generate();
+# ホスティング先のURL
+const HOST_URL = 'https://github.com/ennacx/jp-holiday';
 
-    // スケジュール実行用のGit更新対象ファイルに実行日時を上書き
-    file_put_contents('.exec_timestamp', date('Y-m-d H:i:s'));
+try{
+    $JpHoliday = new JpHoliday\JpHoliday();
+
+    $JpHoliday->generate();
 } catch(Exception $e){
     echo $e->getMessage();
 }
