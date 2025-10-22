@@ -107,6 +107,20 @@ class JpHoliday {
     }
 
     /**
+     * Writes the current date and time in ISO 8601 format to a predefined file.
+     *
+     * @return int|false Returns the number of bytes written to the file, or false on failure.
+     */
+    public function putTimestamp(): int|false {
+
+        if($this->raw === '')
+            return false;
+
+        // スケジュール実行用のGit更新対象ファイルに実行日時を上書き
+        return file_put_contents('.exec_timestamp', date('Y-m-d\TH:i:sO'));
+    }
+
+    /**
      * Retrieves data from Google Calendar, applying caching logic to reduce unnecessary HTTP requests.
      * It checks for a cached copy and updates only if the remote resource has changed.
      *
@@ -123,17 +137,13 @@ class JpHoliday {
 
             // 後段で "変化なし → スキップ" の判定に使うための空値
             $this->raw = '';
+        } else{
+            echo "Http status is {$res['status']} (Update). ". Http::getUrl() . PHP_EOL;
 
-            return;
+            $this->raw = str_replace("\r", '', $res['body'] ?? '');
+            if($this->raw === '')
+                throw new Exception('Empty ICS body');
         }
-
-        echo "Http status is {$res['status']} (Update). ". Http::getUrl() . PHP_EOL;
-
-        $body = $res['body'] ?? '';
-        if($body === '')
-            throw new Exception('Empty ICS body');
-
-        $this->raw = str_replace("\r", '', $body);
     }
 
     /**

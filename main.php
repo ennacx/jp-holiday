@@ -7,10 +7,9 @@ require 'vendor/autoload.php';
 const HOST_URL = 'https://github.com/ennacx/jp-holiday';
 
 try{
-    (new JpHoliday\JpHoliday())->generate();
+    $JpHoliday = new JpHoliday\JpHoliday();
 
-    // スケジュール実行用のGit更新対象ファイルに実行日時を上書き
-    file_put_contents('.exec_timestamp', date('Y-m-d\TH:i:sO'));
+    $JpHoliday->generate();
 } catch(Exception $e){
     echo $e->getMessage();
 }

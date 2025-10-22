@@ -1,0 +1,23 @@
+name: Keep GitHub Actions active
+
+on:
+  schedule:
+    - cron:  '0 0 1 * *'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: git Commit & Push
+      run: |
+        date -u +%FT%TZ > .keepalive
+        git config core.filemode false
+        git add .keepalive
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git commit -m "[KeepAlive] Auto-Commit by github-actions $(date -u +%F)" || echo "No changes to commit"
+        git push
