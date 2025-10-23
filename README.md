@@ -1,5 +1,5 @@
 # Japanese Holiday🎉
-## Overview
+## Overview🐾
 We store Japanese holidays obtained from **Google Calendar’s official Japanese holiday feed** (`ja.japanese#holiday@group.v.calendar.google.com`) by year in **JSON** and **CSV** formats.
 
 Five years before and after the current year, and each daily update keeps the dataset consistent in ISO 8601 format.
