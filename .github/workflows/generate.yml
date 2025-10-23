@@ -101,10 +101,10 @@ jobs:
           path: .cache
           key: jp-holiday-gcal-cache-${{ runner.os }}-${{ github.run_id }}
 
-      # Ensure README.md exists before converting
+      # Ensure README.md exists before converting and copy for pandoc
       - name: Ensure README.md exists
         if: steps.main.outputs.status != '304'
-        run: test -f README.md
+        run: test -f README.md && cp README.md index.md
 
       # Convert README.md to index.html for GitHub Pages
       # Using official Pandoc Docker image for reproducibility
@@ -116,7 +116,7 @@ jobs:
           args: >
             -f markdown
             -t html5
-            README.md
+            index.md
             -s
             --embed-resources
             -c github-markdown-dark.css
@@ -145,6 +145,12 @@ jobs:
               git commit -m "[Update] Auto-Commit by github-actions $(date -u +%F)" || echo "No changes to commit"
               git push
             fi
+
+      # Clean up temporary files
+      - name: Cleanup temporary files
+        if: steps.main.outputs.status != '304'
+        run: |
+          rm -f index.md
 
       # Upload artifacts for GitHub Pages deployment
       - name: Upload Pages artifact
