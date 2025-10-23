@@ -120,7 +120,7 @@ jobs:
             -s
             --embed-resources
             -c github-markdown-dark.css
-            --metadata title=""
+            --metadata title="Japanese Holiday🎉"
             --variable=titleblock:false
             --include-before-body=meta.html
             -o dist/index.html
