@@ -169,7 +169,10 @@ class JpHoliday {
                 $dateObj = $event->DTSTART->getDateTime();
                 if($dateObj === null || !($dateObj instanceof DateTimeInterface))
                     continue;
-                $dateObj = $dateObj->setTimezone($DateTimeZone)->setTime(0, 0, 0);
+                $dateObj = $dateObj->setTimezone($DateTimeZone);
+                // DTSTARTがDATETIMEだった場合はUTC基準なので補正 (終日イベントのみ)
+                if(!$event->DTSTART->hasTime())
+                    $dateObj = $dateObj->setTime(0, 0, 0);
 
                 // 最終的に格納するキーと配列
                 $intYear = intval($dateObj->format('Y'));
