@@ -125,6 +125,12 @@ jobs:
             --include-before-body=meta.html
             -o dist/index.html
 
+      # Force remove Pandoc title header block
+      - name: Remove Pandoc title header block
+        if: steps.main.outputs.status != '304'
+        # Deletes the `<header id="title-block-header">...</header>` block
+        run: sed -i '/<header id="title-block-header">/,/<\/header>/d' dist/index.html
+
       # Copy resources
       - name: Copy resources
         if: steps.main.outputs.status != '304'
