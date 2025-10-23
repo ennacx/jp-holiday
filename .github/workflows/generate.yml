@@ -120,22 +120,13 @@ jobs:
             -s
             --embed-resources
             -c github-markdown-dark.css
-            -o dist/index.html
+            --metadata lang="en"
             --metadata title="Japanese Holiday | Japan’s Official Holiday JSON/CSV Feed"
             --metadata description="Automatically updated dataset of Japan’s national and festival holidays based on Google Calendar. Available daily in JSON and CSV formats (ISO 8601 & JST timestamps)."
-            --metadata author="ennacx"
-            --metadata lang="en"
             --metadata keywords="Japan holidays, Japanese calendar, national holidays, JSON, CSV, GitHub Pages, Google Calendar, JST, ISO8601"
-            --metadata og:title="Japanese Holiday | Japan’s Official Holiday Data"
-            --metadata og:description="Daily auto-updated JSON/CSV datasets for Japan’s holidays, generated from Google Calendar (JST/ISO8601)."
-            --metadata og:type="website"
-            --metadata og:url="https://ennacx.github.io/jp-holiday/"
-            --metadata og:image="https://ennacx.github.io/jp-holiday/ogp.png"
-            --metadata twitter:card="summary_large_image"
-            --metadata twitter:title="Japanese Holiday"
-            --metadata twitter:description="Auto-updated JSON/CSV datasets for Japan’s official holidays."
-            --metadata twitter:image="https://ennacx.github.io/jp-holiday/ogp.png"
+            --metadata author="ennacx"
             --include-before-body=meta.html
+            -o dist/index.html
 
       # Copy resources
       - name: Copy resources
