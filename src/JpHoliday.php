@@ -89,50 +89,39 @@ class JpHoliday {
     }
 
     /**
-     * 祝祭日ファイル生成
+     * 祝祭日カレンダーの生成
      *
-     * @return void
+     * @return int HTTP status code
      * @throws Exception
      */
-    public function generate(): void {
+    public function generate(): int {
 
         // データを取得して
-        $this->getFromGCal();
+        $httpStatus = $this->getFromGCal();
 
         // 扱いやすく整理して
         $this->summarizeRaw();
 
         // ファイル化する
         $this->putFile();
+
+        return $httpStatus;
     }
 
     /**
-     * Writes the current date and time in ISO 8601 format to a predefined file.
+     * Retrieves data from Google Calendar with local cache and processes the HTTP response.
      *
-     * @return int|false Returns the number of bytes written to the file, or false on failure.
+     * @return int The HTTP response status code indicating the result of the data fetch operation.
+     * @throws Exception If the HTTP response is invalid or the ICS body is empty.
      */
-    public function putTimestamp(): int|false {
-
-        if($this->raw === '')
-            return false;
-
-        // スケジュール実行用のGit更新対象ファイルに実行日時を上書き
-        return file_put_contents('.exec_timestamp', date('Y-m-d\TH:i:sO'));
-    }
-
-    /**
-     * Retrieves data from Google Calendar, applying caching logic to reduce unnecessary HTTP requests.
-     * It checks for a cached copy and updates only if the remote resource has changed.
-     *
-     * @return void
-     * @throws Exception If the retrieved calendar data is empty or HTTP status is invalid.
-     */
-    private function getFromGCal(): void {
+    private function getFromGCal(): int {
 
         // キャッシュ判定後の実データ取得
         $res = Http::getIcsWithLocalCache($this->cacheDir);
 
-        if($res['status'] === 304){
+        if(!array_key_exists('status', $res)){
+            throw new Exception('Invalid HTTP response');
+        } else if($res['status'] === 304){
             echo 'Http status is 304 (Skip). '. Http::getUrl() . PHP_EOL;
 
             // 後段で "変化なし → スキップ" の判定に使うための空値
@@ -144,6 +133,8 @@ class JpHoliday {
             if($this->raw === '')
                 throw new Exception('Empty ICS body');
         }
+
+        return $res['status'];
     }
 
     /**

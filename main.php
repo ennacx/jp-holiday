@@ -7,12 +7,11 @@ require 'vendor/autoload.php';
 const HOST_URL = 'https://github.com/ennacx/jp-holiday';
 
 try{
-    $JpHoliday = new JpHoliday\JpHoliday();
+    // カレンダー生成
+    $httpStatus = (new JpHoliday\JpHoliday())->generate();
 
-    // カレンダーに変更があれば生成
-    $JpHoliday->generate();
-    // 生成時にはタイムスタンプをファイルに
-    $JpHoliday->putTimestamp();
+    // 結果出力
+    echo json_encode(['status' => $httpStatus], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
 } catch(Exception $e){
     echo $e->getMessage();
 }
