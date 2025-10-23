@@ -1,8 +1,8 @@
 # Japanese Holiday🎉
-
+## Overview🐾
 We store Japanese holidays obtained from **Google Calendar’s official Japanese holiday feed** (`ja.japanese#holiday@group.v.calendar.google.com`) by year in **JSON** and **CSV** formats.
 
-Data is stored for the past, current, and next five years, and each daily update keeps the dataset consistent in ISO 8601 format.
+Five years before and after the current year, and each daily update keeps the dataset consistent in ISO 8601 format.
 
 This project automatically updates data once per day through **GitHub Actions**, and the repository remains active through a monthly keep-alive workflow.
 
@@ -19,8 +19,8 @@ https://ennacx.github.io/jp-holiday/v1/date.json
 ### Separate national-holidays and festival-holidays
 You can also get filtered lists for national holidays only, or for festival holidays only.
 
-- National holidays only → https://ennacx.github.io/jp-holiday/v1/shu/date.json
-- Festival holidays only → https://ennacx.github.io/jp-holiday/v1/sai/date.json
+* National holidays only → https://ennacx.github.io/jp-holiday/v1/shu/date.json
+* Festival holidays only → https://ennacx.github.io/jp-holiday/v1/sai/date.json
 
 ### Divide by year
 To get a list divided by year, specify the directory for the year after the version.<br>
@@ -38,7 +38,7 @@ For CSV files, the first column contains the ISO 8601 date string and the second
 We also provide timestamp-based files (`ts.json`, `ts.csv`),  
 where the key or first column is a **UNIX timestamp in seconds** (`integer`).
 
-**(All UNIX timestamps are normalized to JST (UTC+9), consistent with Japan’s national calendar.)**
+**(All UNIX timestamps are normalized to JST (UTC+09:00), consistent with Japan’s national calendar.)**
 
 #### Example Date formatted JSON (`date.json`) structure:
 ```json
@@ -69,10 +69,10 @@ where the key or first column is a **UNIX timestamp in seconds** (`integer`).
 ```
 
 ### Update frequency
-- The data source is refreshed daily via **GitHub Actions**.
-- Cached Google Calendar responses are persisted between runs to reduce API load.
-- Cache validation is performed automatically using HTTP 304 (incremental update).
-- Repository remains active with a scheduled monthly keep-alive commit.
+* The data source is refreshed daily via **GitHub Actions**.
+* Cached Google Calendar responses are reused between runs to minimize API load.
+* Cache validation is performed automatically using HTTP 304 (incremental update).
+* Repository remains active with a scheduled monthly keep-alive commit.
 
 ## Directory tree🌱
 ```
@@ -116,7 +116,8 @@ v1/
 * [CreativeCommons BY-SA](https://creativecommons.org/licenses/by-sa/4.0/)
 
 ## Metadata📝
-- **Data source:** Google Calendar (Japanese Holiday feed)
-- **Format:** ISO 8601 for dates, UNIX time for timestamps
-- **Last update:** auto-generated daily via GitHub Actions
-- **Maintainer:** [ennacx](https://github.com/ennacx)
+* **Data source:** Google Calendar (Japanese Holiday feed)
+* **Format:** ISO 8601 for dates, UNIX time for timestamps (UTC+09:00)
+* **Retention:** Data for five years before and after the current year is maintained.
+* **Last update:** auto-generated daily via GitHub Actions
+* **Maintainer:** [ennacx](https://github.com/ennacx)
