@@ -149,9 +149,9 @@ class JpHoliday {
      */
     private function summarizeRaw(): void {
 
-        $DateTimeZone = new DateTimeZone('Asia/Tokyo');
-
         if(!empty($this->raw)){
+            $DateTimeZone = new DateTimeZone('Asia/Tokyo');
+
             $vcal = VObject\Reader::read($this->raw);
             foreach($vcal->select('VEVENT') as $event){
                 // 名称取得
@@ -169,7 +169,7 @@ class JpHoliday {
                 $dateObj = $event->DTSTART->getDateTime();
                 if($dateObj === null || !($dateObj instanceof DateTimeInterface))
                     continue;
-                $dateObj = $dateObj->setTimezone($DateTimeZone);
+                $dateObj = $dateObj->setTimezone($DateTimeZone)->setTime(0, 0, 0);
 
                 // 最終的に格納するキーと配列
                 $intYear = intval($dateObj->format('Y'));

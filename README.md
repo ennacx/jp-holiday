@@ -2,6 +2,8 @@
 
 We store Japanese holidays obtained from **Google Calendar’s official Japanese holiday feed** (`ja.japanese#holiday@group.v.calendar.google.com`) by year in **JSON** and **CSV** formats.
 
+Data is stored for the past, current, and next five years, and each daily update keeps the dataset consistent in ISO 8601 format.
+
 This project automatically updates data once per day through **GitHub Actions**, and the repository remains active through a monthly keep-alive workflow.
 
 ## How to use🤔
@@ -36,7 +38,9 @@ For CSV files, the first column contains the ISO 8601 date string and the second
 We also provide timestamp-based files (`ts.json`, `ts.csv`),  
 where the key or first column is a **UNIX timestamp in seconds** (`integer`).
 
-Example JSON structure:
+**(All UNIX timestamps are normalized to JST (UTC+9), consistent with Japan’s national calendar.)**
+
+#### Example Date formatted JSON (`date.json`) structure:
 ```json
 {
   "2025-01-01": "元日",
@@ -44,9 +48,30 @@ Example JSON structure:
 }
 ```
 
+#### Example Timestamp formatted JSON (`ts.json`) structure:
+```json
+{
+  "1735657200": "元日",
+  "1736694000": "成人の日"
+}
+```
+
+#### Example Date formatted CSV (`date.csv`) structure:
+```csv
+"2025-01-01","元日"
+"2025-01-13","成人の日"
+```
+
+#### Example Timestamp formatted CSV (`ts.csv`) structure:
+```csv
+"1735657200","元日"
+"1736694000","成人の日"
+```
+
 ### Update frequency
 - The data source is refreshed daily via **GitHub Actions**.
-- Cache validation is performed automatically (HTTP 304-based incremental update).
+- Cached Google Calendar responses are persisted between runs to reduce API load.
+- Cache validation is performed automatically using HTTP 304 (incremental update).
 - Repository remains active with a scheduled monthly keep-alive commit.
 
 ## Directory tree🌱
