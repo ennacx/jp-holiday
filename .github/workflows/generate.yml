@@ -120,11 +120,6 @@ jobs:
             -s
             --embed-resources
             -c github-markdown-dark.css
-            --metadata lang="en"
-            --metadata title="Japanese Holiday | Japan’s Official Holiday JSON/CSV Feed"
-            --metadata description="Automatically updated dataset of Japan’s national and festival holidays based on Google Calendar. Available daily in JSON and CSV formats (ISO 8601 & JST timestamps)."
-            --metadata keywords="Japan holidays, Japanese calendar, national holidays, JSON, CSV, GitHub Pages, Google Calendar, JST, ISO8601"
-            --metadata author="ennacx"
             --include-before-body=meta.html
             -o dist/index.html
 
