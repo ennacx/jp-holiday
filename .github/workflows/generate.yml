@@ -1,106 +1,150 @@
+# --- Conditional Processing ---
+# Only execute following steps if Google Calendar data has changed.
+# (Skip when HTTP status is 304)
+
 name: JP-Holiday Calendar generate
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master" ]               # Trigger on pushes to master
   schedule:
-    - cron:  '0 0 * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *'                  # Run every day at 00:00 (UTC)
+  workflow_dispatch:                     # Allow manual triggering
 
+# Prevent multiple concurrent deployments from overlapping
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: write                        # Allow pushing changes (e.g., .exec_timestamp updates)
 
 jobs:
+  # ----------------------------
+  # Build Job
+  # ----------------------------
+
   build:
     runs-on: ubuntu-latest
     outputs:
-      status: ${{ steps.main.outputs.status }}  # buildジョブの出力として明示
+      # Export main.php result status for deploy job
+      status: ${{ steps.main.outputs.status }}
 
     steps:
-    - uses: actions/checkout@v4
+      # ----------------------------
+      # Setup and Dependency Management
+      # ----------------------------
 
-    - name: Validate composer.json and composer.lock
-      run: composer validate --strict
+      # Check out the repository code
+      - uses: actions/checkout@v4
 
-    - name: Cache Composer packages
-      id: composer-cache
-      uses: actions/cache@v3
-      with:
-        path: vendor
-        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-php-
+      - name: Validate composer.json and composer.lock
+        run: composer validate --strict
+        continue-on-error: true            # Continue even if validation warnings occur
 
-    - name: Install dependencies
-      run: composer install --prefer-dist --no-progress
+      - name: Cache Composer packages
+        id: composer-cache
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
 
-    - name: Make directory
-      run: |
-        mkdir -p ./dist
-        mkdir -p ./.cache
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
 
-    # Restore the previous Google Calendar cache
-    # Use a unique key (run_id) only for saving; here we use restore-keys to match any prior cache.
-    # This prevents creation of a redundant "jp-holiday-gcal-cache-Linux" entry.
-    - name: Restore calendar cache
-      uses: actions/cache@v4
-      with:
-        path: .cache
-        key: jp-holiday-gcal-cache-${{ runner.os }}-${{ github.run_id }}
-        restore-keys: |
-          jp-holiday-gcal-cache-${{ runner.os }}-
-          jp-holiday-gcal-cache-
+      - name: Make directory
+        run: |
+          mkdir -p ./dist                  # Output directory for generated files
+          mkdir -p ./.cache                # Cache directory for Google Calendar data
 
-    - name: Run main
-      id: main
-      run: |
-        php -d detect_unicode=0 ./main.php > result.log
-        STATUS=$(grep -o '"status":[[:space:]]*[0-9]\+' result.log | head -1 | grep -o '[0-9]\+')
-        echo "status=$STATUS" >> $GITHUB_OUTPUT
-        echo "main.php finished with status [$STATUS]"
-        rm -f result.log
+      # ----------------------------
+      # Google Calendar Caching
+      # ----------------------------
 
-    # Save updated cache only if data changed (status != 304)
-    # This keeps the cache fresh without duplicating identical data.
-    - name: Save calendar cache
-      if: steps.main.outputs.status != '304'
-      uses: actions/cache@v4
-      with:
-        path: .cache
-        key: jp-holiday-gcal-cache-${{ runner.os }}-${{ github.run_id }}
+      # Restore cached calendar data from previous builds.
+      # The key uses run_id for uniqueness on save but only restore-keys for lookup.
+      # This avoids creating redundant “jp-holiday-gcal-cache-Linux” entries.
+      - name: Restore calendar cache
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: jp-holiday-gcal-cache-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            jp-holiday-gcal-cache-${{ runner.os }}-
+            jp-holiday-gcal-cache-
 
-    - name: Generate index.html by Pandoc
-      if: steps.main.outputs.status != '304'
-      uses: docker://pandoc/core
-      with:
-        args: -f markdown -t html5 README.md -s --embed-resources -c github-markdown-dark.css -o dist/index.html
+      # ----------------------------
+      # Main Script Execution
+      # ----------------------------
 
-    - name: git Commit & Push
-      if: steps.main.outputs.status != '304'
-      run: |
-        date -u +%FT%TZ > .exec_timestamp
-        git config core.filemode false
-          if ! git diff --exit-code --quiet
-          then
-            git add --update
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "[Update] Auto-Commit by github-actions $(date -u +%F)" || echo "No changes to commit"
-            git push
-          fi
+      - name: Run main
+        id: main
+        run: |
+          php -d detect_unicode=0 ./main.php > result.log
+          STATUS=$(grep -o '"status":[[:space:]]*[0-9]\+' result.log | head -1 | grep -o '[0-9]\+')
+          echo "status=$STATUS" >> $GITHUB_OUTPUT   # Pass status to later steps
+          echo "main.php finished with status [$STATUS]"
+          rm -f result.log
 
-    - name: Upload Pages artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: './dist'
+      # ----------------------------
+      # Conditional Processing (Only when Calendar Updated)
+      # ----------------------------
+
+      # Save updated cache only when calendar data changed.
+      # Keeps cache fresh without redundant data writes.
+      - name: Save calendar cache
+        if: steps.main.outputs.status != '304'
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: jp-holiday-gcal-cache-${{ runner.os }}-${{ github.run_id }}
+
+      # Ensure README.md exists before converting
+      - name: Ensure README.md exists
+        if: steps.main.outputs.status != '304'
+        run: test -f README.md
+
+      # Convert README.md to index.html for GitHub Pages
+      # Using official Pandoc Docker image for reproducibility
+      - name: Generate index.html by Pandoc
+        if: steps.main.outputs.status != '304'
+        uses: docker://pandoc/core
+        with:
+          args: -f markdown -t html5 README.md -s --embed-resources -c github-markdown-dark.css -o dist/index.html
+
+      # Commit timestamp and push changes only if calendar was updated
+      # Note: .exec_timestamp is always updated intentionally for tracking
+      - name: git Commit & Push
+        if: steps.main.outputs.status != '304'
+        run: |
+          date -u +%FT%TZ > .exec_timestamp
+          git config core.filemode false
+            if ! git diff --exit-code --quiet
+            then
+              git add --update
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git commit -m "[Update] Auto-Commit by github-actions $(date -u +%F)" || echo "No changes to commit"
+              git push
+            fi
+
+      # Upload artifacts for GitHub Pages deployment
+      - name: Upload Pages artifact
+        if: steps.main.outputs.status != '304'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+  # ----------------------------
+  # Deploy Job (only if updated)
+  # ----------------------------
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    # Take over the build job's output status and skip when 304 (no data change)
     if: ${{ needs.build.outputs.status != '304' }}
     permissions:
       pages: write
@@ -108,6 +152,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

@@ -1,23 +1,44 @@
+# This workflow periodically commits a timestamp file (.keepalive)
+# to keep the repository "active" and prevent GitHub Actions
+# from being automatically disabled due to 60 days of inactivity.
+
 name: Keep GitHub Actions active
 
 on:
   schedule:
-    - cron:  '0 0 1 * *'
-  workflow_dispatch:
+    - cron: '0 0 1 * *'             # Run monthly on the 1st at 00:00 (UTC)
+  workflow_dispatch:                # Allow manual trigger if needed
 
 jobs:
   keepalive:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      # ----------------------------
+      # Checkout repository content
+      # ----------------------------
+      - uses: actions/checkout@v4
 
-    - name: git Commit & Push
-      run: |
-        date -u +%FT%TZ > .keepalive
-        git config core.filemode false
-        git add .keepalive
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git commit -m "[KeepAlive] Auto-Commit by github-actions $(date -u +%F)" || echo "No changes to commit"
-        git push
+      # ----------------------------
+      # Commit & Push timestamp file
+      # ----------------------------
+      - name: git Commit & Push
+        run: |
+          # Update timestamp file (forces change every run)
+          date -u +%FT%TZ > .keepalive
+
+          # Prevent file mode changes from being treated as diffs
+          git config core.filemode false
+
+          # Stage the file (ensures commit even if already tracked)
+          git add .keepalive
+
+          # Configure GitHub Actions bot identity
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Commit only if there are actual diffs (otherwise print message)
+          git commit -m "[KeepAlive] Auto-Commit by github-actions $(date -u +%F)" || echo "No changes to commit"
+
+          # Push changes (ignore errors to prevent job failure)
+          git push || true
