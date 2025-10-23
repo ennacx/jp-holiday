@@ -108,17 +108,41 @@ jobs:
 
       # Convert README.md to index.html for GitHub Pages
       # Using official Pandoc Docker image for reproducibility
+      # Adds SEO-friendly metadata, OGP tags, and Twitter Card integration
       - name: Generate index.html by Pandoc
         if: steps.main.outputs.status != '304'
         uses: docker://pandoc/core
         with:
-          args: -f markdown -t html5 README.md -s --embed-resources -c github-markdown-dark.css -o dist/index.html
+          args: >
+            -f markdown
+            -t html5
+            README.md
+            -s
+            --embed-resources
+            -c github-markdown-dark.css
+            -o dist/index.html
+            --metadata title="Japanese Holiday | Japan’s Official Holiday JSON/CSV Feed"
+            --metadata description="Automatically updated dataset of Japan’s national and festival holidays based on Google Calendar. Available daily in JSON and CSV formats (ISO 8601 & JST timestamps)."
+            --metadata author="ennacx"
+            --metadata lang="en"
+            --metadata keywords="Japan holidays, Japanese calendar, national holidays, JSON, CSV, GitHub Pages, Google Calendar, JST, ISO8601"
+            --metadata og:title="Japanese Holiday | Japan’s Official Holiday Data"
+            --metadata og:description="Daily auto-updated JSON/CSV datasets for Japan’s holidays, generated from Google Calendar (JST/ISO8601)."
+            --metadata og:type="website"
+            --metadata og:url="https://ennacx.github.io/jp-holiday/"
+            --metadata og:image="https://ennacx.github.io/jp-holiday/ogp.png"
+            --metadata twitter:card="summary_large_image"
+            --metadata twitter:title="Japanese Holiday"
+            --metadata twitter:description="Auto-updated JSON/CSV datasets for Japan’s official holidays."
+            --metadata twitter:image="https://ennacx.github.io/jp-holiday/ogp.png"
+            --include-before-body=meta.html
 
       # Copy resources
       - name: Copy resources
         if: steps.main.outputs.status != '304'
         run: |
           cp ./googleb95e7dd5d4aa5997.html ./dist/
+          cp ./ogp.png ./dist/
 
       # Commit timestamp and push changes only if calendar was updated
       # Note: .exec_timestamp is always updated intentionally for tracking
