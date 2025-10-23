@@ -41,12 +41,16 @@ jobs:
         mkdir -p ./dist
         mkdir -p ./.cache
 
+    # Restore the previous Google Calendar cache
+    # Use a unique key (run_id) only for saving; here we use restore-keys to match any prior cache.
+    # This prevents creation of a redundant "jp-holiday-gcal-cache-Linux" entry.
     - name: Restore calendar cache
       uses: actions/cache@v4
       with:
         path: .cache
-        key: jp-holiday-gcal-cache-${{ runner.os }}
+        key: jp-holiday-gcal-cache-${{ runner.os }}-${{ github.run_id }}
         restore-keys: |
+          jp-holiday-gcal-cache-${{ runner.os }}-
           jp-holiday-gcal-cache-
 
     - name: Run main
@@ -58,6 +62,8 @@ jobs:
         echo "main.php finished with status [$STATUS]"
         rm -f result.log
 
+    # Save updated cache only if data changed (status != 304)
+    # This keeps the cache fresh without duplicating identical data.
     - name: Save calendar cache
       if: steps.main.outputs.status != '304'
       uses: actions/cache@v4
