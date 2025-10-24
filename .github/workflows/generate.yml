@@ -29,6 +29,7 @@ jobs:
     outputs:
       # Export main.php result status for deploy job
       status: ${{ steps.main.outputs.status }}
+      hash: ${{ steps.main.outputs.new_hash }}
 
     steps:
       # ----------------------------
@@ -44,12 +45,12 @@ jobs:
 
       - name: Cache Composer packages
         id: composer-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: vendor
-          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          key: php-composer-${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
-            ${{ runner.os }}-php-
+            php-composer-${{ runner.os }}-
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
@@ -63,6 +64,13 @@ jobs:
       # Google Calendar Caching
       # ----------------------------
 
+      - name: Get Hash of Cache
+        id: hashcheck
+        run: |
+          HASH=$( [ -f .cache/gcal_raw.sha256 ] && cat .cache/gcal_raw.sha256 | tr -d '\n' || echo "nohash" )
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+          echo "Current cache hash: $HASH"
+
       # Restore cached calendar data from previous builds.
       # The key uses run_id for uniqueness on save but only restore-keys for lookup.
       # This avoids creating redundant “jp-holiday-gcal-cache-Linux” entries.
@@ -70,10 +78,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache
-          key: jp-holiday-gcal-cache-${{ runner.os }}-${{ github.run_id }}
+          key: jp-holiday-gcal-cache-${{ runner.os }}-${{ steps.hashcheck.outputs.hash }}
           restore-keys: |
             jp-holiday-gcal-cache-${{ runner.os }}-
-            jp-holiday-gcal-cache-
 
       # ----------------------------
       # Main Script Execution
@@ -82,9 +89,11 @@ jobs:
       - name: Run main
         id: main
         run: |
-          php -d detect_unicode=0 ./main.php > result.log
+          php ./main.php > result.log
           STATUS=$(grep -o '"status":[[:space:]]*[0-9]\+' result.log | head -1 | grep -o '[0-9]\+')
-          echo "status=$STATUS" >> $GITHUB_OUTPUT   # Pass status to later steps
+          NEW_HASH=$(cat .cache/gcal_raw.sha256 | tr -d '\n')
+          echo "status=$STATUS" >> $GITHUB_OUTPUT       # Pass status to later steps
+          echo "new_hash=$NEW_HASH" >> $GITHUB_OUTPUT   # Pass hash to later steps
           echo "main.php finished with status [$STATUS]"
           rm -f result.log
 
@@ -99,7 +108,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache
-          key: jp-holiday-gcal-cache-${{ runner.os }}-${{ github.run_id }}
+          key: jp-holiday-gcal-cache-${{ runner.os }}-${{ steps.main.outputs.new_hash }}
 
       # Ensure README.md exists before converting and copy for pandoc
       - name: Ensure README.md exists
@@ -122,7 +131,7 @@ jobs:
             -c github-markdown-dark.css
             --metadata title="Japanese Holiday🎉"
             --variable=titleblock:false
-            --include-before-body=meta.html
+            --include-in-header=meta.html
             -o dist/index.html
 
       # Force remove Pandoc title header block
@@ -162,7 +171,7 @@ jobs:
 
       # Upload artifacts for GitHub Pages deployment
       - name: Upload Pages artifact
-        if: steps.main.outputs.status != '304'
+        if: steps.main.outputs.status != '304' && hashFiles('dist/**') != ''
         uses: actions/upload-pages-artifact@v3
         with:
           path: './dist'
@@ -174,6 +183,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+
     # Take over the build job's output status and skip when 304 (no data change)
     if: ${{ needs.build.outputs.status != '304' }}
     permissions:
@@ -181,9 +191,11 @@ jobs:
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Publish URL to summary
+        run: echo "Deployed to ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
