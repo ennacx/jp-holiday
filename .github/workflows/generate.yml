@@ -39,10 +39,16 @@ jobs:
       # Check out the repository code
       - uses: actions/checkout@v4
 
+      # Composer validation
       - name: Validate composer.json and composer.lock
         run: composer validate --strict
         continue-on-error: true            # Continue even if validation warnings occur
 
+      # Cache Composer dependencies to speed up future runs.
+      # On first execution, no cache is found and vendor/ will be created by Composer.
+      # On subsequent runs, the cache restores vendor/ before installation,
+      # allowing Composer to reuse packages without re-downloading.
+      # The cache is automatically saved at the end of the job when a miss occurs.
       - name: Cache Composer packages
         id: composer-cache
         uses: actions/cache@v4
@@ -52,9 +58,13 @@ jobs:
           restore-keys: |
             php-composer-${{ runner.os }}-
 
+      # Install PHP dependencies using Composer.
+      # Thanks to the cache step above, this command completes quickly
+      # when dependencies are already up to date.
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
+      # Make need directory
       - name: Make directory
         run: |
           mkdir -p ./dist                  # Output directory for generated files
@@ -64,6 +74,11 @@ jobs:
       # Google Calendar Caching
       # ----------------------------
 
+      # Determine the current cache hash before execution.
+      # Reads the latest SHA256 hash from the .cache directory if available;
+      # otherwise falls back to "nohash" for initial runs.
+      # This ensures that the restore key reflects the exact Google Calendar data state
+      # and avoids unnecessary re-fetching or redundant cache generations.
       - name: Get Hash of Cache
         id: hashcheck
         run: |
@@ -73,19 +88,27 @@ jobs:
 
       # Restore cached calendar data from previous builds.
       # The key uses run_id for uniqueness on save but only restore-keys for lookup.
-      # This avoids creating redundant “jp-holiday-gcal-cache-Linux” entries.
+      # This avoids creating redundant “gcal-cache-{Linux}” entries.
       - name: Restore calendar cache
         uses: actions/cache@v4
         with:
           path: .cache
-          key: jp-holiday-gcal-cache-${{ runner.os }}-${{ steps.hashcheck.outputs.hash }}
+          key: gcal-cache-${{ runner.os }}-${{ steps.hashcheck.outputs.hash }}
           restore-keys: |
-            jp-holiday-gcal-cache-${{ runner.os }}-
+            gcal-cache-${{ runner.os }}-
 
       # ----------------------------
       # Main Script Execution
       # ----------------------------
 
+      # Execute the main PHP script responsible for fetching and processing
+      # the latest Google Calendar data. The script generates a result log
+      # that includes the HTTP response status and an updated SHA256 hash
+      # of the retrieved calendar content.
+      # The HTTP status (e.g., 200 or 304) and new hash are extracted and
+      # exported as GitHub Action outputs for conditional steps downstream.
+      # This allows subsequent jobs to determine whether to skip or update
+      # deployment based on content changes.
       - name: Run main
         id: main
         run: |
@@ -108,7 +131,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache
-          key: jp-holiday-gcal-cache-${{ runner.os }}-${{ steps.main.outputs.new_hash }}
+          key: gcal-cache-${{ runner.os }}-${{ steps.main.outputs.new_hash }}
 
       # Ensure README.md exists before converting and copy for pandoc
       - name: Ensure README.md exists
