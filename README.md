@@ -1,6 +1,6 @@
 # Japanese Holiday🎉
 ## Overview🐾
-We store Japanese holidays obtained from **Google Calendar’s official Japanese holiday feed** (`ja.japanese#holiday@group.v.calendar.google.com`) by year in **JSON** and **CSV** formats.
+We store Japanese holidays obtained from **Google Calendar's official Japanese holiday feed** (`ja.japanese#holiday@group.v.calendar.google.com`) by year in **JSON** and **CSV** formats.
 
 Five years before and after the current year, and each daily update keeps the dataset consistent in ISO 8601 format.
 
@@ -38,7 +38,7 @@ For CSV files, the first column contains the ISO 8601 date string and the second
 We also provide timestamp-based files (`ts.json`, `ts.csv`),  
 where the key or first column is a **UNIX timestamp in seconds** (`integer`).
 
-**(All UNIX timestamps are normalized to JST (UTC+09:00), consistent with Japan’s national calendar.)**
+**(All UNIX timestamps are normalized to JST (UTC+09:00), consistent with Japan's national calendar.)**
 
 #### Example Date formatted JSON (`date.json`) structure:
 ```json
